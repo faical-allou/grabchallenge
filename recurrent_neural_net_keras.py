@@ -44,7 +44,7 @@ print("reading data done : "+str(int(time.time()-start_time))+" s")
 
 training_periods = 96*7 # 96 is the number of intervals per day
 test_periods = 5 # following the test period
-precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
+precision = 4 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 train = True # otherwise use the latest
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
@@ -91,8 +91,8 @@ nbcolumns = len(X[0][0])
 
 ##################################################  HYPERPARAMETERS
 h_layer1_nodes = int(nbcolumns*lookback*np.log(training_periods))
-h_layeri_nodes = int(nbcolumns*lookback)
-h_layerf_nodes = int(nbcolumns*lookback)
+h_layeri_nodes = int(nbcolumns*lookback*np.log(training_periods))
+h_layerf_nodes = int(nbcolumns*lookback*np.log(training_periods))
 
 nb_h_layers = 0 # this doesn't account for the first and last hidden layers
 
