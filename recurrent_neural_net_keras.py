@@ -45,7 +45,7 @@ print("reading data done : "+str(int(time.time()-start_time))+" s")
 training_periods = 96*14 # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
-train = True # otherwise use the latest
+train = False # otherwise use the latest
 lookback = 4*8 # number of periods to lookback; 4 per hour 
 
 ###################################################   DATA PREP
@@ -164,9 +164,7 @@ print("std weights = "+str(np.std(list_weights))+"\n")
 
 # calculate predictions and metrics
 predictions = model.predict(Xtest)
-predictions = denormalize(predictions, mXprep, sYprep)
-
-Ytest = denormalize(Ytest, mXprep, sYprep)
+predictions = denormalize(predictions, mXprep, sXprep)
 
 mape = np.sum(np.abs(Ytest-predictions))/np.sum(Ytest)
 mse = ((Ytest-predictions)**2).mean(axis=None)
@@ -180,7 +178,7 @@ print("test MSE: %.2f%%" % (mse*100))
 
 #print first rows
 print("input :")
-print(denormalize(Xtest, mXprep, sYprep))
+print(Xtest[0][0])
 print("prediction :")
 print(predictions[0])
 print("actual :")
