@@ -164,7 +164,9 @@ print("std weights = "+str(np.std(list_weights))+"\n")
 
 # calculate predictions and metrics
 predictions = model.predict(Xtest)
-predictions = denormalize(predictions, mYt, sYt)
+predictions = denormalize(predictions, mXprep, sYprep)
+
+Ytest = denormalize(Ytest, mXprep, sYprep)
 
 mape = np.sum(np.abs(Ytest-predictions))/np.sum(Ytest)
 mse = ((Ytest-predictions)**2).mean(axis=None)
@@ -178,7 +180,7 @@ print("test MSE: %.2f%%" % (mse*100))
 
 #print first rows
 print("input :")
-print(Xtest[0][0])
+print(denormalize(Xtest, mXprep, sYprep))
 print("prediction :")
 print(predictions[0])
 print("actual :")
