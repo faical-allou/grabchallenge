@@ -26,9 +26,6 @@ def prep_input(data, precision_geo):
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
 
     X = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
-    meanX = np.mean(X,axis=0)
-    stdX = np.std(X,axis=0)
-    X = (X-meanX)/stdX
     return X
 
 def normalize(X):
@@ -55,17 +52,16 @@ lookback = 4*8 # number of periods to lookback; 4 per hour
 
 data.demand = data.demand
 Xprep = prep_input(data , precision)
+Xprep, mXprep, sXprep = normalize(Xprep)
 
 #remove first time step from Y and the last from X 
 Yprep = Xprep[1:]
 Xprep.drop(Xprep.tail(1).index,inplace=True)
 
+
 # filtering for the dates we need
 X = np.array(Xprep[lookback:training_periods])
 Y = np.array(Yprep[lookback:training_periods])
-
-X, mX, sX = normalize(X)
-Y, mY, sY = normalize(Y)
 
 #shaping for the LTSM layer requirement
 X = X.reshape(X.shape[0],1,X.shape[1])
@@ -82,8 +78,6 @@ Ytest = Yprep[training_periods:training_periods+test_periods]
 
 Xtest = np.array(Xtest)
 
-Xtest, mXt, sXt = normalize(Xtest)
-
 Xtest = Xtest.reshape(Xtest.shape[0],1,Xtest.shape[1])
 
 # adding the data to look back at
@@ -93,7 +87,7 @@ for j in range(lookback-1):
     Xtest = np.append( Xtest, Xlookback , axis=1 )
 
 Ytest = np.array(Ytest)
-Ytest, mYt, sYt = normalize(Ytest)
+
 print("data prep done : " +str(int(time.time()-start_time))+" s")
  
 nbcolumns = len(X[0][0])
