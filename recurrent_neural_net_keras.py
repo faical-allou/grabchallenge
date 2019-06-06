@@ -42,11 +42,11 @@ def prep_label(data, start, end):
 data= pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 96*7 # 96 is the number of intervals per day
+training_periods = 96*14 # 96 is the number of intervals per day
 test_periods = 5 # following the test period
-precision = 4 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
+precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 train = True # otherwise use the latest
-lookback = 4*4 # number of periods to lookback; 4 per hour 
+lookback = 4*8 # number of periods to lookback; 4 per hour 
 
 ###################################################   DATA PREP
 
@@ -90,11 +90,11 @@ print("data prep done : " +str(int(time.time()-start_time))+" s")
 nbcolumns = len(X[0][0])
 
 ##################################################  HYPERPARAMETERS
-h_layer1_nodes = int(nbcolumns*lookback*np.log(training_periods))
-h_layeri_nodes = int(nbcolumns*lookback*np.log(training_periods))
-h_layerf_nodes = int(nbcolumns*lookback*np.log(training_periods))
+h_layer1_nodes = int(nbcolumns*lookback)
+h_layeri_nodes = int(nbcolumns*lookback)
+h_layerf_nodes = int(nbcolumns*lookback)
 
-nb_h_layers = 0 # this doesn't account for the first and last hidden layers
+nb_h_layers = 5 # this doesn't account for the first and last hidden layers
 
 print("size of each input vector : "+ str(nbcolumns))
 print("size of 1st hidden layers : "+ str(h_layer1_nodes))
@@ -122,7 +122,7 @@ if train:
     model.compile(loss='mean_absolute_error', 
         optimizer='sgd', metrics=['mean_absolute_error'])
 
-    model.fit(X, Y, epochs=200, batch_size=int(training_periods/10), 
+    model.fit(X, Y, epochs=200, batch_size=int(training_periods/4), 
         validation_split=0.2,  verbose=2)
 
     # evaluate the model
