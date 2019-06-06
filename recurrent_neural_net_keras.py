@@ -26,20 +26,23 @@ def prep_input(data, precision_geo):
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
 
     X = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
+    meanX = np.mean(X,axis=0)
+    stdX = np.std(X,axis=0)
+    X = (X-meanX)/stdX
     return X
 
-def prep_label(data, start, end):
-    a = data.day.astype(int)  >= start
-    b = data.day.astype(int)  <= end
-    indices = a & b
-    Yprep = data[indices]
+def normalize(X):
+    meanX = np.mean(X,axis=0)
+    stdX = np.std(X,axis=0)
+    Xp = (X-meanX)/stdX
+    return Xp, meanX, stdX  
 
-    Y = Yprep.demand.astype(float)
-    Y = Y.to_numpy().reshape(-1,1)
-    return Y
+def denormalize(X,m,s):
+    Xp = (X*s+m)
+    return Xp
 
 ###################################################   INPUT
-data= pd.read_csv('training.csv')
+data= pd.read_csv('subdata_3geo.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
 training_periods = 96*14 # 96 is the number of intervals per day
@@ -61,6 +64,9 @@ Xprep.drop(Xprep.tail(1).index,inplace=True)
 X = np.array(Xprep[lookback:training_periods])
 Y = np.array(Yprep[lookback:training_periods])
 
+X, mX, sX = normalize(X)
+Y, mY, sY = normalize(Y)
+
 #shaping for the LTSM layer requirement
 X = X.reshape(X.shape[0],1,X.shape[1])
 
@@ -75,6 +81,9 @@ Xtest = Xprep[training_periods:training_periods+test_periods]
 Ytest = Yprep[training_periods:training_periods+test_periods]
 
 Xtest = np.array(Xtest)
+
+Xtest, mXt, sXt = normalize(Xtest)
+
 Xtest = Xtest.reshape(Xtest.shape[0],1,Xtest.shape[1])
 
 # adding the data to look back at
@@ -84,7 +93,7 @@ for j in range(lookback-1):
     Xtest = np.append( Xtest, Xlookback , axis=1 )
 
 Ytest = np.array(Ytest)
-
+Ytest, mYt, sYt = normalize(Ytest)
 print("data prep done : " +str(int(time.time()-start_time))+" s")
  
 nbcolumns = len(X[0][0])
@@ -98,7 +107,7 @@ nb_h_layers = 5 # this doesn't account for the first and last hidden layers
 
 print("size of each input vector : "+ str(nbcolumns))
 print("size of 1st hidden layers : "+ str(h_layer1_nodes))
-print("nb of i hidden layers : "+ str(nb_h_layers))
+print("nb of hidden recurent layers : "+ str(nb_h_layers+2))
 print("size of i hidden layers : "+ str(h_layeri_nodes))
 print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
 
@@ -110,14 +119,14 @@ if train:
     model = Sequential()
     
     model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns),
-                 activation='relu', return_sequences=True))  
+                 activation='tanh', return_sequences=True))  
 
     for _ in range(nb_h_layers):
-        model.add(LSTM(h_layeri_nodes, activation='relu', return_sequences=True))
+        model.add(LSTM(h_layeri_nodes, activation='tanh', return_sequences=True))
     
-    model.add(LSTM(h_layerf_nodes, activation='relu'))
+    model.add(LSTM(h_layerf_nodes, activation='tanh'))
     
-    model.add(Dense(nbcolumns, activation='relu'))
+    model.add(Dense(nbcolumns, activation='linear')) #output layer
 
     model.compile(loss='mean_absolute_error', 
         optimizer='sgd', metrics=['mean_absolute_error'])
@@ -161,6 +170,7 @@ print("std weights = "+str(np.std(list_weights))+"\n")
 
 # calculate predictions and metrics
 predictions = model.predict(Xtest)
+predictions = denormalize(predictions, mYt, sYt)
 
 mape = np.sum(np.abs(Ytest-predictions))/np.sum(Ytest)
 mse = ((Ytest-predictions)**2).mean(axis=None)
