@@ -34,19 +34,22 @@ def normalize(X):
     Xp = (X-meanX)/stdX
     return Xp, meanX, stdX  
 
-def denormalize(X,m,s):
-    Xp = (X*s+m)
-    return Xp
+def denormalize(Xp,m,s):
+    out = []
+    for x in Xp:
+        out.append(x*s+m)
+    return np.array(out)
 
 ###################################################   INPUT
 data= pd.read_csv('subdata_3geo.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 96*14 # 96 is the number of intervals per day
+training_periods = 500 # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
-train = False # otherwise use the latest
-lookback = 4*8 # number of periods to lookback; 4 per hour 
+lookback = 4*4 # number of periods to lookback; 4 per hour 
+
+train = True # otherwise use the latest
 
 ###################################################   DATA PREP
 
@@ -97,7 +100,10 @@ h_layer1_nodes = int(nbcolumns*lookback)
 h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
-nb_h_layers = 5 # this doesn't account for the first and last hidden layers
+nb_h_layers = 5 # this doesn't account for the first and last hidden layers (+2)
+
+e = 5000                        # epoch
+b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
 print("size of 1st hidden layers : "+ str(h_layer1_nodes))
@@ -125,8 +131,7 @@ if train:
     model.compile(loss='mean_absolute_error', 
         optimizer='sgd', metrics=['mean_absolute_error'])
 
-    model.fit(X, Y, epochs=200, batch_size=int(training_periods/4), 
-        validation_split=0.2,  verbose=2)
+    model.fit(X, Y, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
     # evaluate the model
     scores = model.evaluate(X, Y)
@@ -165,6 +170,7 @@ print("std weights = "+str(np.std(list_weights))+"\n")
 # calculate predictions and metrics
 predictions = model.predict(Xtest)
 predictions = denormalize(predictions, mXprep, sXprep)
+Ytest = denormalize(Ytest,mXprep, sXprep)
 
 mape = np.sum(np.abs(Ytest-predictions))/np.sum(Ytest)
 mse = ((Ytest-predictions)**2).mean(axis=None)
