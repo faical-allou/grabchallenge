@@ -82,9 +82,9 @@ test_periods = 5 # following the test period
 precision = 4 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = True   # otherwise use the latest
+train = False   # otherwise use the latest
 train2 = True   # for the second neural net
-start_from_previous = False 
+start_from_previous = True 
 
 ###################################################   DATA PREP
 
@@ -186,20 +186,25 @@ Y2 = np.array(Y2p[lookback:training_periods])
 
 Ytest2 = np.array(Y2p[training_periods:training_periods+test_periods])
 
+Y2n, mY2n, sY2n = normalize(Y2)
+
+
 #### MODEL
 print("Prep 2 done in : "+str(int(time.time()-start_time))+" s")
 
 model2 = Sequential()
-model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns))
-model2.add(Dense(full_size, activation='sigmoid'))
+model2.add(Dense(full_size, activation='tanh', input_dim=nbcolumns,
+                 kernel_regularizer=regularizers.l2(0.01),
+                    activity_regularizer=regularizers.l1(0.01)))
 
 if train2:
-    model2.compile(loss='mse', optimizer='sgd', metrics=['mse'])
-    model2.fit(fitted_m1, Y2, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
+    model2.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+    model2.fit(fitted_m1, Y2n, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
     model2.save_weights("model2.h5")
-    scores = model2.evaluate(fitted_m1, Y2)
+    scores = model2.evaluate(fitted_m1, Y2n)
     print("\n%s: %.2f%%" % (model2.metrics_names[1], scores[1]))
     print("training in : "+str(int(time.time()-start_time))+" s")
+    print(" ")
 else: 
     model2.load_weights("model2.h5")
 
@@ -221,10 +226,11 @@ mape = np.sum(np.abs(Ytest-Yhat))/np.sum(Ytest)
 mse = ((Ytest-Yhat)**2).mean(axis=None)
 mae = (np.abs(Ytest-Yhat)).mean(axis=None)
 
-print("prediction in : "+str(int(time.time()-start_time))+" s")
-print("test MAE: " + str(mae*100))
-print("test MAPE: %.2f%%" % (mape*100))
-print("test MSE: %.2f%%" % (mse*100))
+print("all predictions in : "+str(int(time.time()-start_time))+" s\n")
+
+print("test MAE1: " + str(mae*100))
+print("test MAPE1: %.2f%%" % (mape*100))
+print("test MSE1: %.2f%%" % (mse*100))
 print(" ")
 
 myFile = open('output.csv', 'w', newline='')
@@ -246,14 +252,15 @@ model.save(model_name)
 print_weights(model2)
 
 Yhat2 = model2.predict(Yhat)
+Yhat2 = denormalize(Yhat2, mY2n, sY2n)
+
 mape = np.sum(np.abs(Ytest2-Yhat2))/np.sum(Ytest)
 mse = ((Ytest2-Yhat2)**2).mean(axis=None)
 mae = (np.abs(Ytest2-Yhat2)).mean(axis=None)
 
-print("prediction in : "+str(int(time.time()-start_time))+" s")
-print("test MAE: " + str(mae*100))
-print("test MAPE: %.2f%%" % (mape*100))
-print("test MSE: %.2f%%" % (mse*100))
+print("test MAE2: " + str(mae*100))
+print("test MAPE2: %.2f%%" % (mape*100))
+print("test MSE2: %.2f%%" % (mse*100))
 
 myFile = open('output2.csv', 'w', newline='')
 with myFile:
@@ -264,3 +271,5 @@ with myFile:
         writer.writerow((100*Yhat2[i]).astype(int))
         writer.writerow(" ")
     writer.writerow(" ##### END ##### ")
+    
+print("end of script in : "+str(int(time.time()-start_time))+" s")
