@@ -38,7 +38,7 @@ def denormalize(Xp,m,s):
     out = []
     for x in Xp:
         out.append(x*s+m)
-    return np.array(out)
+    return np.array(out).clip(min=0)
 
 def scaling(Y,Yhat,X):
     lastX = np.array(X[:][-1][:])
@@ -50,7 +50,7 @@ def scaling(Y,Yhat,X):
         scaling_factors = np.array(Y[i-1]/(Yhat[i-1]+0.0001))
         scaling_factors[scaling_factors > 3] = 1
         out[i] = np.positive(Yhat[i]*scaling_factors)
-    return np.array(out)
+    return np.array(out).clip(min=0)
         
 def print_weights(model):
     list_weights = []
@@ -77,14 +77,14 @@ def print_weights(model):
 data= pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 500 # 96 is the number of intervals per day
+training_periods = 600       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
-precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
+precision = 4 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = False   # otherwise use the latest
-train2 = False   # for the second neural net
-start_from_previous = True 
+train = True   # otherwise use the latest
+train2 = True   # for the second neural net
+start_from_previous = False 
 
 ###################################################   DATA PREP
 
@@ -134,9 +134,10 @@ h_layer1_nodes = int(nbcolumns*lookback)
 h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
-nb_h_layers = 5     # this doesn't account for the first and last hidden layers (+2)
+nb_h_layers = 0     # this doesn't account for the first and last hidden layers (+2)
 
-e = 1                           # epoch
+e = 10000                           # epoch
+e2 = e
 b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
@@ -190,10 +191,11 @@ print("Prep 2 done in : "+str(int(time.time()-start_time))+" s")
 
 model2 = Sequential()
 model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns))
-model2.compile(loss='mse', optimizer='sgd', metrics=['mse'])
+model2.add(Dense(full_size, activation='sigmoid'))
 
 if train2:
-    model2.fit(fitted_m1, Y2, epochs=1000, batch_size=100, validation_split=0.2,  verbose=2)
+    model2.compile(loss='mse', optimizer='sgd', metrics=['mse'])
+    model2.fit(fitted_m1, Y2, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
     model2.save_weights("model2.h5")
     scores = model2.evaluate(fitted_m1, Y2)
     print("\n%s: %.2f%%" % (model2.metrics_names[1], scores[1]))
