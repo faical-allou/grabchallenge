@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "console": "externalTerminal",
             "pythonPath": "C:/Users/Faical/OneDrive/Documents/python35/python35.exe",
         },
         {
@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "console": "externalTerminal",
             "pythonPath": "C:/Users/Faical/OneDrive/Documents/python37/python37.exe",
         
         }

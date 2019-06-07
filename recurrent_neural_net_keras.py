@@ -40,8 +40,12 @@ def denormalize(Xp,m,s):
         out.append(x*s+m)
     return np.array(out)
 
-def scaling(Y,Yhat,init):
-    out = Yhat*init
+def scaling(Y,Yhat,X):
+    lastX = np.array(X[:][-1][:])
+    lastX= lastX.reshape(1,lookback,nbcolumns)
+    init_scale = Y[-1]/ (model.predict(lastX)+0.001)
+    init_scale[init_scale > 3] = 1
+    out = Yhat*init_scale
     for i in range(1,len(Yhat)):
         
         scaling_factors = np.array(Y[i-1]/(Yhat[i-1]+0.0001))
@@ -60,7 +64,7 @@ test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = True # otherwise use the latest
+train = False   # otherwise use the latest
 
 start_from_previous = True 
 
@@ -113,9 +117,9 @@ h_layer1_nodes = int(nbcolumns*lookback)
 h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
-nb_h_layers = 5 # this doesn't account for the first and last hidden layers (+2)
+nb_h_layers = 5     # this doesn't account for the first and last hidden layers (+2)
 
-e = 2                        # epoch
+e = 1                           # epoch
 b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
@@ -129,19 +133,15 @@ print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
 
 # create model
 model = Sequential()
-
 model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns),
                 activation='tanh', return_sequences=True))  
 
 for _ in range(nb_h_layers):
     model.add(LSTM(h_layeri_nodes, activation='tanh', return_sequences=True))
-
 model.add(LSTM(h_layerf_nodes, activation='tanh'))
-
 model.add(Dense(nbcolumns, activation='linear')) #output layer
 
-model.compile(loss='mean_absolute_error', 
-    optimizer='sgd', metrics=['mean_absolute_error'])
+model.compile(loss='mean_absolute_error', optimizer='sgd', metrics=['mean_absolute_error'])
 
 if start_from_previous: model.load_weights("model.h5")
 
@@ -156,6 +156,17 @@ if train:
     model.save_weights("model.h5")
 else:
     model.load_weights("model.h5")
+    model.save_weights("model.h5")
+
+###################################################   SECONDARY MODEL TO EXPLODE 
+
+full_size = len(data.geohash6.unique())
+
+model = Sequential()
+model.add(Dense(nbcolumns, activation='linear'))
+model.add(Dense(nbcolumns, activation='linear'))
+
+
 
 
 ###################################################   RESULTS
@@ -185,12 +196,7 @@ predictions = model.predict(Xtest)
 predictions = denormalize(predictions, mXprep, sXprep)
 Ytest = denormalize(Ytest,mXprep, sXprep)
 
-lastX = np.array(X[:][-1][:])
-lastX= lastX.reshape(1,lookback,nbcolumns)
-init_scale = Y[-1]/ (model.predict(lastX)+0.001)
-init_scale[init_scale > 3] = 1
-
-Yhat = scaling(Ytest,predictions, init_scale)
+Yhat = scaling(Ytest,predictions, X)
 
 mape = np.sum(np.abs(Ytest-Yhat))/np.sum(Ytest)
 mse = ((Ytest-Yhat)**2).mean(axis=None)
