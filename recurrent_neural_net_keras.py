@@ -40,8 +40,16 @@ def denormalize(Xp,m,s):
         out.append(x*s+m)
     return np.array(out)
 
+def scaling(Y,Yhat):
+    out = Yhat
+    for i in range(1,len(Yhat)):
+        out[i] = Yhat[i]*(Y[i-1]/Yhat[i-1])
+    return np.array(out)
+        
+
+
 ###################################################   INPUT
-data= pd.read_csv('subdata_3geo.csv')
+data= pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
 training_periods = 500 # 96 is the number of intervals per day
@@ -49,7 +57,9 @@ test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = True # otherwise use the latest
+train = False # otherwise use the latest
+
+use_previous_weights = True 
 
 ###################################################   DATA PREP
 
@@ -102,7 +112,7 @@ h_layerf_nodes = int(nbcolumns*lookback)
 
 nb_h_layers = 5 # this doesn't account for the first and last hidden layers (+2)
 
-e = 5000                        # epoch
+e = 1000                        # epoch
 b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
@@ -130,7 +140,9 @@ if train:
 
     model.compile(loss='mean_absolute_error', 
         optimizer='sgd', metrics=['mean_absolute_error'])
-
+    
+    if use_previous_weights: model.load_weights("model.h5")
+    
     model.fit(X, Y, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
     # evaluate the model
@@ -172,9 +184,11 @@ predictions = model.predict(Xtest)
 predictions = denormalize(predictions, mXprep, sXprep)
 Ytest = denormalize(Ytest,mXprep, sXprep)
 
-mape = np.sum(np.abs(Ytest-predictions))/np.sum(Ytest)
-mse = ((Ytest-predictions)**2).mean(axis=None)
-mae = (np.abs(Ytest-predictions)).mean(axis=None)
+Yhat = scaling(Ytest,predictions)
+
+mape = np.sum(np.abs(Ytest-Yhat))/np.sum(Ytest)
+mse = ((Ytest-Yhat)**2).mean(axis=None)
+mae = (np.abs(Ytest-Yhat)).mean(axis=None)
 
 print("prediction in : "+str(int(time.time()-start_time))+" s")
 #print and save results and weights
@@ -186,7 +200,7 @@ print("test MSE: %.2f%%" % (mse*100))
 print("input :")
 print(Xtest[0][0])
 print("prediction :")
-print(predictions[0])
+print(Yhat[0])
 print("actual :")
 print(Ytest[0])
 
