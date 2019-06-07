@@ -29,10 +29,12 @@ def prep_input(data, precision_geo):
     return X
 
 def normalize(X):
-    meanX = np.mean(X,axis=0)
-    stdX = np.std(X,axis=0)
+    meanX = X.mean(axis=0)
+    stdX = X.std(axis=0)
     Xp = (X-meanX)/stdX
-    return Xp, meanX, stdX  
+    Xp[np.isnan(Xp)] = 0
+    stdX[np.isnan(stdX)] = 0
+    return Xp, meanX, stdX
 
 def denormalize(Xp,m,s):
     out = []
@@ -79,7 +81,7 @@ print("reading data done : "+str(int(time.time()-start_time))+" s")
 
 training_periods = 600       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
-precision = 4 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
+precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
 train = False   # otherwise use the latest
