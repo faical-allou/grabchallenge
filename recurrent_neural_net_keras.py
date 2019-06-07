@@ -40,10 +40,13 @@ def denormalize(Xp,m,s):
         out.append(x*s+m)
     return np.array(out)
 
-def scaling(Y,Yhat):
-    out = Yhat
+def scaling(Y,Yhat,init):
+    out = Yhat*init
     for i in range(1,len(Yhat)):
-        out[i] = Yhat[i]*(Y[i-1]/Yhat[i-1])
+        
+        scaling_factors = np.array(Y[i-1]/(Yhat[i-1]+0.0001))
+        scaling_factors[scaling_factors > 3] = 1
+        out[i] = np.positive(Yhat[i]*scaling_factors)
     return np.array(out)
         
 
@@ -57,9 +60,9 @@ test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = False # otherwise use the latest
+train = True # otherwise use the latest
 
-use_previous_weights = True 
+start_from_previous = True 
 
 ###################################################   DATA PREP
 
@@ -112,7 +115,7 @@ h_layerf_nodes = int(nbcolumns*lookback)
 
 nb_h_layers = 5 # this doesn't account for the first and last hidden layers (+2)
 
-e = 1000                        # epoch
+e = 2                        # epoch
 b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
@@ -124,25 +127,25 @@ print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
 ###################################################   MODEL
 
 
+# create model
+model = Sequential()
+
+model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns),
+                activation='tanh', return_sequences=True))  
+
+for _ in range(nb_h_layers):
+    model.add(LSTM(h_layeri_nodes, activation='tanh', return_sequences=True))
+
+model.add(LSTM(h_layerf_nodes, activation='tanh'))
+
+model.add(Dense(nbcolumns, activation='linear')) #output layer
+
+model.compile(loss='mean_absolute_error', 
+    optimizer='sgd', metrics=['mean_absolute_error'])
+
+if start_from_previous: model.load_weights("model.h5")
+
 if train:
-    # create model
-    model = Sequential()
-    
-    model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns),
-                 activation='tanh', return_sequences=True))  
-
-    for _ in range(nb_h_layers):
-        model.add(LSTM(h_layeri_nodes, activation='tanh', return_sequences=True))
-    
-    model.add(LSTM(h_layerf_nodes, activation='tanh'))
-    
-    model.add(Dense(nbcolumns, activation='linear')) #output layer
-
-    model.compile(loss='mean_absolute_error', 
-        optimizer='sgd', metrics=['mean_absolute_error'])
-    
-    if use_previous_weights: model.load_weights("model.h5")
-    
     model.fit(X, Y, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
     # evaluate the model
@@ -150,11 +153,9 @@ if train:
     print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]))
     print("training in : "+str(int(time.time()-start_time))+" s")
 
-    model.save("model.h5")
-    
+    model.save_weights("model.h5")
 else:
-    # use the latest model saved
-    model = load_model('model.h5')
+    model.load_weights("model.h5")
 
 
 ###################################################   RESULTS
@@ -184,7 +185,12 @@ predictions = model.predict(Xtest)
 predictions = denormalize(predictions, mXprep, sXprep)
 Ytest = denormalize(Ytest,mXprep, sXprep)
 
-Yhat = scaling(Ytest,predictions)
+lastX = np.array(X[:][-1][:])
+lastX= lastX.reshape(1,lookback,nbcolumns)
+init_scale = Y[-1]/ (model.predict(lastX)+0.001)
+init_scale[init_scale > 3] = 1
+
+Yhat = scaling(Ytest,predictions, init_scale)
 
 mape = np.sum(np.abs(Ytest-Yhat))/np.sum(Ytest)
 mse = ((Ytest-Yhat)**2).mean(axis=None)
@@ -197,12 +203,12 @@ print("test MAPE: %.2f%%" % (mape*100))
 print("test MSE: %.2f%%" % (mse*100))
 
 #print first rows
-print("input :")
-print(Xtest[0][0])
-print("prediction :")
-print(Yhat[0])
-print("actual :")
-print(Ytest[0])
+#print("input :")
+#print(Xtest[0][0])
+#print("prediction :")
+#print(Yhat[0])
+#print("actual :")
+#print(Ytest[0])
 
 myFile = open('output.csv', 'w', newline='')
 with myFile:
