@@ -1,6 +1,7 @@
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, LSTM
 from keras import regularizers, optimizers, callbacks, activations
+from keras import backend as K
 
 import tensorflow as tf
 import numpy as np
@@ -9,6 +10,9 @@ import time
 from datetime import datetime
 import pandas as pd
 import re
+import matplotlib.pyplot as plt
+
+plt.style.use('seaborn-whitegrid')
 
 #remove warnings tensorflow
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -25,8 +29,9 @@ def prep_input(data, precision_geo):
     
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
 
-    X = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
-    return X
+    Xagg = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
+    Xfull = data.pivot(index='date_time_index', columns='geohash6', values='demand').fillna(0, inplace=False)
+    return Xagg, Xfull
 
 def normalize(X):
     meanX = X.mean(axis=0)
@@ -42,18 +47,14 @@ def denormalize(Xp,m,s):
         out.append(x*s+m)
     return np.array(out).clip(min=0)
 
-def scaling(Y,Yhat,X):
-    lastX = np.array(X[:][-1][:])
-    lastX = lastX.reshape(1,lookback,nbcolumns)
-    init_scale = Y[-1]/ (model.predict(lastX)+0.001)
-    init_scale[init_scale > 3] = 1
-    out = Yhat*init_scale
-    for i in range(1,len(Yhat)):       
-        scaling_factors = np.array(Y[i-1]/(Yhat[i-1]+0.0001))
-        scaling_factors[scaling_factors > 3] = 1
-        out[i] = np.positive(Yhat[i]*scaling_factors)
+def scaling(Y,scaling_vector):
+    scaling_vector[scaling_vector>3] = 1
+    out = Y*scaling_vector  
     return np.array(out).clip(min=0)
-        
+
+def sum_pred_error(y_true, y_pred):
+    return 10*K.abs(K.mean(y_pred)-K.mean(y_true))+K.mean(K.abs(y_pred-y_true))
+       
 def print_weights(model):
     list_weights = []
     for layer in model.layers:
@@ -76,22 +77,40 @@ def print_weights(model):
     print("std weights = "+str(np.std(list_weights))+"\n")
 
 ###################################################   INPUT
-data= pd.read_csv('training.csv')
+data = pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 600       # 96 is the number of intervals per day
+training_periods = 96*20+210       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
 train = False   # otherwise use the latest
-train2 = True   # for the second neural net
-start_from_previous = True 
+train2 = False   # for the second neural net
+start_from_previous = True  # if you train do you start from the previous
+start_from_previous2 = True # if you train2 do you start from the previous
+scaling_vector = np.genfromtxt('scaling.v', delimiter=',')
 
-###################################################   DATA PREP
+##################################################  PREP INPUT
+Xprep, Xfull = prep_input(data, precision)
 
-data.demand = data.demand
-Xprep = prep_input(data , precision)
+##################################################  HYPERPARAMETERS
+nbcolumns = len(Xprep.columns)
+h_layer1_nodes = int(nbcolumns*lookback)
+h_layeri_nodes = int(nbcolumns*lookback)
+h_layerf_nodes = int(nbcolumns*lookback)
+
+e = 10000                           # epoch
+e2 = 10000
+b = int(training_periods/2)     # batch size
+
+print("size of each input vector : "+ str(nbcolumns))
+print("size of 1st hidden layers : "+ str(h_layer1_nodes))
+print("size of i hidden layers : "+ str(h_layeri_nodes))
+print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
+
+###################################################   DATA PREP FOR NETWORK
+
 Xprepn, mXprepn, sXprepn = normalize(Xprep)
 
 #remove first time step from Y and the last from X 
@@ -99,24 +118,23 @@ Yprepn = Xprepn[1:]
 Xprepn.drop(Xprepn.tail(1).index,inplace=True)
 
 # filtering for the dates we need
-X = np.array(Xprepn[lookback:training_periods])
-Y = np.array(Yprepn[lookback:training_periods])
+Xn = np.array(Xprepn[lookback:training_periods])
+Yn = np.array(Yprepn[lookback:training_periods])
 
 #shaping for the LTSM layer requirement
-X = X.reshape(X.shape[0],1,X.shape[1])
+Xn = Xn.reshape(Xn.shape[0],1,Xn.shape[1])
 
 # adding the data to look back at
 for j in range(lookback-1):
     Xlookback = np.array(Xprepn[lookback-j-1:training_periods-j-1])
     Xlookback = Xlookback.reshape(Xlookback.shape[0],1,Xlookback.shape[1])
-    X = np.append( X, Xlookback , axis=1 )
+    Xn = np.append( Xn, Xlookback , axis=1 )
 
 # preparing the test data
 Xtest = Xprepn[training_periods:training_periods+test_periods]
 Ytest = Yprepn[training_periods:training_periods+test_periods]
 
 Xtest = np.array(Xtest)
-
 Xtest = Xtest.reshape(Xtest.shape[0],1,Xtest.shape[1])
 
 # adding the data to look back at
@@ -128,101 +146,86 @@ for j in range(lookback-1):
 Ytest = np.array(Ytest)
 
 print("data prep done : " +str(int(time.time()-start_time))+" s")
- 
-nbcolumns = len(X[0][0])
-
-##################################################  HYPERPARAMETERS
-h_layer1_nodes = int(nbcolumns*lookback)
-h_layeri_nodes = int(nbcolumns*lookback)
-h_layerf_nodes = int(nbcolumns*lookback)
-
-nb_h_layers = 0     # this doesn't account for the first and last hidden layers (+2)
-
-e = 10000                           # epoch
-e2 = e
-b = int(training_periods/2)     # batch size
-
-print("size of each input vector : "+ str(nbcolumns))
-print("size of 1st hidden layers : "+ str(h_layer1_nodes))
-print("nb of hidden recurent layers : "+ str(nb_h_layers+2))
-print("size of i hidden layers : "+ str(h_layeri_nodes))
-print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
 
 ###################################################   MODEL
-print("modelling : " +str(int(time.time()-start_time))+" s")
+print("modelling start: " +str(int(time.time()-start_time))+" s")
 # create model
 model = Sequential()
 model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns), activation='tanh', return_sequences=True))  
-
-for _ in range(nb_h_layers):
-    model.add(LSTM(h_layeri_nodes, activation='tanh', return_sequences=True))
 model.add(LSTM(h_layerf_nodes, activation='tanh'))
 model.add(Dense(nbcolumns, activation='linear')) #output layer
 
 if start_from_previous: model.load_weights("model.h5")
-print("training : " +str(int(time.time()-start_time))+" s")
+print("training start: " +str(int(time.time()-start_time))+" s")
 
 if train:
     model.compile(loss='mean_absolute_error', optimizer='sgd', metrics=['mean_absolute_error'])
-    model.fit(X, Y, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
+    model.fit(Xn, Yn, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
-    scores = model.evaluate(X, Y)
+    scores = model.evaluate(Xn, Yn)
     model.save_weights("model.h5")
     print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]))
-    print("training in : "+str(int(time.time()-start_time))+" s")
+    print("training1 in : "+str(int(time.time()-start_time))+" s")
 
 else:
     model.load_weights("model.h5")
 
 ###################################################   SECONDARY MODEL FOR GEODATA
 #### PREP DATA
-print("second network in : "+str(int(time.time()-start_time))+" s")
+print("second network reached: "+str(int(time.time()-start_time))+" s")
 full_size = len(data.geohash6.unique())
-fitted_m1 = model.predict(X)
 
-X2p = prep_input(data, len(data.geohash6[0]))
-Y2p = X2p[1:]
-X2p.drop(X2p.tail(1).index,inplace=True)
-X2 = np.array(X2p[lookback:training_periods])
-Y2 = np.array(Y2p[lookback:training_periods])
+Y2 = np.array(Xfull[lookback+1:training_periods+1])
 
-Ytest2 = np.array(Y2p[training_periods:training_periods+test_periods])
-
-Y2n, mY2n, sY2n = normalize(Y2)
-
+Ytest2 = np.array(Xfull[training_periods+2:training_periods+test_periods+2])
 
 #### MODEL
-print("Prep 2 done in : "+str(int(time.time()-start_time))+" s")
+print("Prep 2 done : "+str(int(time.time()-start_time))+" s")
 
 model2 = Sequential()
-model2.add(Dense(full_size, activation='tanh', input_dim=nbcolumns,
-                 kernel_regularizer=regularizers.l2(0.01),
-                    activity_regularizer=regularizers.l1(0.01)))
+model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
+
+if start_from_previous2: model2.load_weights("model2.h5")
 
 if train2:
-    model2.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
-    model2.fit(fitted_m1, Y2n, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
+    # start by scaling the output of model 1 and save it
+    Yscalen = model.predict(Xn)
+    scaling_vector = Yn[-1]/Yscalen[-1]
+
+    myFile = open('scaling.v', 'w', newline='')
+    with myFile:
+        writer = csv.writer(myFile)
+        writer.writerow(scaling_vector)
+
+    fitted_m1s = scaling(Yscalen, scaling_vector)
+    fitted_m1 = denormalize(fitted_m1s, mXprepn, sXprepn)
+
+    model2.compile(loss=sum_pred_error, optimizer='adam', metrics=['mean_absolute_error',sum_pred_error])
+
+    model2.fit(fitted_m1, Y2, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
     model2.save_weights("model2.h5")
-    scores = model2.evaluate(fitted_m1, Y2n)
-    print("\n%s: %.2f%%" % (model2.metrics_names[1], scores[1]))
-    print("training in : "+str(int(time.time()-start_time))+" s")
+
+    scores = model2.evaluate(fitted_m1, Y2)
+    print(str(model2.metrics_names[1])+" :"+str( scores[1]))
+    print("training2 in : "+str(int(time.time()-start_time))+" s")
     print(" ")
 else: 
     model2.load_weights("model2.h5")
 
-
 ###################################################   PREDICT / TIME_SCALE / EXPLODE 
 
 # calculate predictions and metrics
-predictions = model.predict(Xtest)
-predictions = denormalize(predictions, mXprepn, sXprepn)
-Ytest = denormalize(Ytest,mXprepn, sXprepn)
 
-Yhat = scaling(Ytest,predictions, X)
+Yhatn = model.predict(Xtest)
+Yhats = scaling(Yhatn, scaling_vector)
+Yhat = denormalize(Yhats, mXprepn, sXprepn)
+
+Ytest = denormalize(Ytest, mXprepn, sXprepn)
+
 
 ###################################################   RESULTS
 
-#print_weights(model)
+if train : print_weights(model)
 
 mape = np.sum(np.abs(Ytest-Yhat))/np.sum(Ytest)
 mse = ((Ytest-Yhat)**2).mean(axis=None)
@@ -230,10 +233,19 @@ mae = (np.abs(Ytest-Yhat)).mean(axis=None)
 
 print("all predictions in : "+str(int(time.time()-start_time))+" s\n")
 
-print("test MAE1: " + str(mae*100))
+print("test MAE2: %.2f" % mae)
 print("test MAPE1: %.2f%%" % (mape*100))
 print("test MSE1: %.2f%%" % (mse*100))
 print(" ")
+
+plt.figure(0)
+plt.plot(Ytest[0], Yhat[0], 'o', color='black')
+plt.plot([0,1],[0,1])
+plt.xlabel("actual")
+plt.ylabel("prediction")
+plt.suptitle('On Aggregate Level')
+plt.show(block=False)
+input('press <ENTER> to continue')
 
 myFile = open('output.csv', 'w', newline='')
 with myFile:
@@ -249,25 +261,35 @@ model_name = "./models/model "+"UTC "+str(datetime.now())+" "+str(training_perio
 model_name= re.sub('[:]+', '', model_name)
 model.save(model_name)
 
-
-####output of second model
-print_weights(model2)
+###################################################   PREDICT / TIME_SCALE / EXPLODE 
 
 Yhat2 = model2.predict(Yhat)
-Yhat2 = denormalize(Yhat2, mY2n, sY2n)
+
+####output of second model
+if train2: print_weights(model2)
 
 mape = np.sum(np.abs(Ytest2-Yhat2))/np.sum(Ytest)
 mse = ((Ytest2-Yhat2)**2).mean(axis=None)
 mae = (np.abs(Ytest2-Yhat2)).mean(axis=None)
 
-print("test MAE2: " + str(mae*100))
+print("test MAE2: %.2f" % mae)
 print("test MAPE2: %.2f%%" % (mape*100))
 print("test MSE2: %.2f%%" % (mse*100))
+print(" ")
+
+plt.figure(1)
+plt.plot(Ytest2[0], Yhat2[0], 'o', color='black')
+plt.plot([0,1],[0,1])
+plt.xlabel("actual")
+plt.ylabel("prediction")
+plt.suptitle('On Granular Level')
+plt.show(block=False)
+input('press <ENTER> to continue')
 
 myFile = open('output2.csv', 'w', newline='')
 with myFile:
     writer = csv.writer(myFile)
-    writer.writerow(X2p.columns)
+    writer.writerow(Xfull.columns)
     for i in range(test_periods):
         writer.writerow((100*Ytest2[i]).astype(int))
         writer.writerow((100*Yhat2[i]).astype(int))

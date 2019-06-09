@@ -13,6 +13,14 @@
             "pythonPath": "C:/Users/Faical/OneDrive/Documents/python35/python35.exe",
         },
         {
+            "name": "Python3.5 int",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "pythonPath": "C:/Users/Faical/OneDrive/Documents/python35/python35.exe",
+        },
+        {
             "name": "Python3.7",
             "type": "python",
             "request": "launch",
