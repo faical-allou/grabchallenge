@@ -80,15 +80,15 @@ def print_weights(model):
 data = pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 96*20+210       # 96 is the number of intervals per day
+training_periods = 96*50       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
 train = False   # otherwise use the latest
-train2 = False   # for the second neural net
+train2 = True   # for the second neural net
 start_from_previous = True  # if you train do you start from the previous
-start_from_previous2 = True # if you train2 do you start from the previous
+start_from_previous2 = False # if you train2 do you start from the previous
 scaling_vector = np.genfromtxt('scaling.v', delimiter=',')
 
 ##################################################  PREP INPUT
