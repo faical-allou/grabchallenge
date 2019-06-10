@@ -134,9 +134,9 @@ train = False   # otherwise use the latest
 start_from_previous = True  # if you train do you start from the previous
 
 train2 = True   # for the second neural net
-start_from_previous2 = False # if you train2 do you start from the previous
+start_from_previous2 = True # if you train2 do you start from the previous
 
-rescale = True  # recalculate the scaling factors
+rescale = False  # recalculate the scaling factors
 p = 4           # number of periods to average for the scaling starting from the last training period
 scaling_vector = np.genfromtxt('scaling.v', delimiter=',')
 
@@ -150,7 +150,7 @@ h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
 e = 10000                       # epoch
-e2 = 10000
+e2 = 1000
 b = int(training_periods/2)     # batch size
 
 print("size of each input vector : "+ str(nbcolumns))
