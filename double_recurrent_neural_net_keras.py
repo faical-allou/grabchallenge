@@ -24,15 +24,23 @@ start_time = time.time()
 ###################################################   HELPER FUNCTIONS
 
 def prep_input(data, precision_geo):
+    geodata = pd.read_csv('geodata.geo')
     
     data['geo_lim'] = data.geohash6.str[0:precision_geo]
+    geodata_lim = geodata.geo_id.str[0:precision_geo]
+
     data['time'] = pd.to_datetime(data.timestamp, format='%H:%M')
     data['date_time_index'] = data.time + pd.TimedeltaIndex(data.day, unit = 'D')
     
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
-
     Xagg = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
+    for c_lim in geodata_lim:
+        if c_lim not in Xagg : Xagg[c_lim] = 0
+    
     Xfull = data.pivot(index='date_time_index', columns='geohash6', values='demand').fillna(0, inplace=False)
+    for c in geodata.geo_id:
+        if c not in Xfull : Xfull[c] = 0
+
     return Xagg, Xfull
 
 def normalize(X):
@@ -141,7 +149,7 @@ h_layer1_nodes = int(nbcolumns*lookback)
 h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
-e = 100                           # epoch
+e = 100                         # epoch
 e2 = 100
 b = int(training_periods/2)     # batch size
 
