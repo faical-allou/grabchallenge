@@ -193,7 +193,7 @@ model.add(LSTM(h_layer1_nodes, input_shape=(lookback, nbcolumns), activation='ta
 model.add(LSTM(h_layerf_nodes, activation='tanh'))
 model.add(Dense(nbcolumns, activation='linear')) #output layer
 
-if start_from_previous: model.load_weights("model.h5")
+if start_from_previous: model.load_weights("model.h5x")
 print("training start: " +str(int(time.time()-start_time))+" s")
 
 if train:
@@ -234,7 +234,7 @@ print("Prep 2 done : "+str(int(time.time()-start_time))+" s")
 model2 = Sequential()
 model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
 
-if start_from_previous2: model2.load_weights("model2.h5")
+if start_from_previous2: model2.load_weights("model2.h5x")
 
 if train2:
 
