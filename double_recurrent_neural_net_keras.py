@@ -1,14 +1,16 @@
+import numpy as np
+import pandas as pd
+
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, LSTM
 from keras import regularizers, optimizers, callbacks, activations
 from keras import backend as K
 
 import tensorflow as tf
-import numpy as np
+
 import csv
 import time
 from datetime import datetime
-import pandas as pd
 import re
 import matplotlib.pyplot as plt
 
@@ -45,22 +47,22 @@ def denormalize(Xp,m,s):
     out = []
     for x in Xp:
         out.append(x*s+m)
-    return np.array(out).clip(min=0)
+    return np.array(out).clip(min=0, max=1)
 
 def scaling(Y,scaling_vector):
     scaling_vector[scaling_vector>3] = 1
     out = Y*scaling_vector  
-    return np.array(out).clip(min=0)
-
-
-###################################################   PRINTING FUNCTIONS
+    return np.array(out)
 
 def sum_pred_error(y_true, y_pred):
     return 10*K.abs(K.mean(y_pred)-K.mean(y_true))+K.mean(K.abs(y_pred-y_true))
 
+###################################################   PRINTING FUNCTIONS
+
+
 def graphit(Yt,Yh,index,title):
     plt.figure(index)
-    plt.plot(Yt[0], Yh[0], 'o', color='black')
+    plt.plot(Yt.flatten(), Yh.flatten(), 'o', color='black')
     plt.plot([0,1],[0,1])
     plt.xlabel("actual")
     plt.ylabel("prediction")
@@ -115,7 +117,7 @@ def print_weights(model):
 data = pd.read_csv('training.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 96*50+100       # 96 is the number of intervals per day
+training_periods = 96*np.random.randint(1,50)+np.random.randint(1,1000)       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
@@ -124,7 +126,7 @@ train = False   # otherwise use the latest
 start_from_previous = False  # if you train do you start from the previous
 
 train2 = False   # for the second neural net
-start_from_previous2 = True # if you train2 do you start from the previous
+start_from_previous2 = False # if you train2 do you start from the previous
 
 rescale = False  # recalculate the scaling factors
 p = 4           # number of periods to average for the scaling starting from the last training period
