@@ -201,12 +201,12 @@ if train:
     model.fit(Xn, Yn, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
     scores = model.evaluate(Xn, Yn)
-    model.save_weights("model.h5")
+    model.save_weights("model.h5x")
     print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]))
     print("training1 in : "+str(int(time.time()-start_time))+" s")
 
 else:
-    model.load_weights("model.h5")
+    model.load_weights("model.h5x")
 
 ####################################################  SCALING FACTORS
 if rescale:
@@ -244,14 +244,14 @@ if train2:
     model2.compile(loss=sum_pred_error, optimizer='adam', metrics=['mean_absolute_error',sum_pred_error])
 
     model2.fit(fitted_m1, Y2, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
-    model2.save_weights("model2.h5")
+    model2.save_weights("model2.h5x")
 
     scores = model2.evaluate(fitted_m1, Y2)
     print(str(model2.metrics_names[1])+" :"+str( scores[1]))
     print("training2 in : "+str(int(time.time()-start_time))+" s")
     print(" ")
 else: 
-    model2.load_weights("model2.h5")
+    model2.load_weights("model2.h5x")
 
 ###################################################   PREDICT / TIME_SCALE / EXPLODE 
 
