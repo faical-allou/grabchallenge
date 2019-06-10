@@ -217,8 +217,8 @@ else:
     model.load_weights("model.h5x")
 
 ####################################################  SCALING FACTORS
-if rescale:
     Yscalen = model.predict(Xn)
+if rescale:
     scaling_vector = np.sum(Yn[-p:], axis=0)/np.sum(Yscalen[-p:], axis=0)
 
     myFile = open('scaling.v', 'w', newline='')
