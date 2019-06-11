@@ -134,7 +134,7 @@ train = False   # otherwise use the latest
 start_from_previous = True  # if you train do you start from the previous
 
 train2 = True   # for the second neural net
-start_from_previous2 = False # if you train2 do you start from the previous
+start_from_previous2 = True # if you train2 do you start from the previous
 
 rescale = True  # recalculate the scaling factors
 p = 4           # number of periods to average for the scaling starting from the last training period
@@ -217,7 +217,7 @@ else:
     model.load_weights("model.h5x")
 
 ####################################################  SCALING FACTORS
-    Yscalen = model.predict(Xn)
+Yscalen = model.predict(Xn)
 if rescale:
     scaling_vector = np.sum(Yn[-p:], axis=0)/np.sum(Yscalen[-p:], axis=0)
 
