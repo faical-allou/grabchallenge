@@ -130,7 +130,7 @@ test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = False   # otherwise use the latest
+train = True   # otherwise use the latest
 start_from_previous = True  # if you train do you start from the previous
 
 train2 = True   # for the second neural net
