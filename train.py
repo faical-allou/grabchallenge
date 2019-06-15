@@ -36,7 +36,7 @@ def prep_input(data, precision_geo):
     
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
     Xagg = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
-    
+
     for c_lim in geodata_lim:
         if c_lim not in Xagg : Xagg[c_lim] = 0
     
@@ -197,7 +197,6 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
     model.add(Dense(nbcolumns, activation='linear')) #output layer
 
     if start_from_previous: model.load_weights("model.h5x")
-    print("training start: " +str(int(time.time()-start_time))+" s")
 
     if train1:
         model.compile(loss='mean_absolute_error', optimizer='sgd', metrics=['mean_absolute_error'])
@@ -294,12 +293,12 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-i","--inputfile", help="name of the input file",type=str)
-    parser.add_argument("-t1","--train1", help="train first network",action="store_true")
-    parser.add_argument("-t2","--train2", help="train second network",action="store_true")
-    parser.add_argument("-e1","--epochs1", help="epochs to train the first network", type=int)
-    parser.add_argument("-e2","--epochs2", help="epochs to train the second network", type=int)
-    parser.add_argument("-rs","--rescale", help="recalculate the scaling of the output of first network",action="store_true")
+    parser.add_argument("-i","--inputfile", help="name of the input file, default = input.csv",type=str)
+    parser.add_argument("-t1","--train1", help="train first network, default = False",action="store_true")
+    parser.add_argument("-t2","--train2", help="train second network, default = False",action="store_true")
+    parser.add_argument("-e1","--epochs1", help="epochs to train the first network, default = 100", type=int)
+    parser.add_argument("-e2","--epochs2", help="epochs to train the second network, default = 1000", type=int)
+    parser.add_argument("-rs","--rescale", help="recalculate the scaling of the output of first network, default = False",action="store_true")
  
     args = parser.parse_args()
 

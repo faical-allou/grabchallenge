@@ -1,13 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout, LSTM
-from keras import regularizers, optimizers, callbacks, activations
-from keras import backend as K
-
-import tensorflow as tf
-
 import csv
 import time
 from datetime import datetime
@@ -18,12 +11,13 @@ import train
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-i","--inputfile", help="name of the input file",type=str)
-parser.add_argument("-o","--outputfile", help="name of the input file",type=str)
+parser.add_argument("-i","--inputfile", help="name of the input file, default = input.csv",type=str)
+parser.add_argument("-o","--outputfile", help="name of the output file, default = prediction.csv",type=str)
 
 args = parser.parse_args()
 infilename = args.inputfile if args.inputfile else 'input.csv'
 outfilename = args.inputfile if args.inputfile else 'prediction.csv'
+
 Xprepn, mXprepn, sXprepn, Xfull, full_size, nbcolumns, test_periods,lookback, model, model2, scaling_vector = train.execute_script(infilename)
 
 
