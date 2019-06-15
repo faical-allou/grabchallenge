@@ -165,7 +165,7 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
     Xn = np.array(Xprepn[lookback:training_periods])
     Yn = np.array(Yprepn[lookback:training_periods])
 
-    #shaping for the LTSM layer requirement
+    #shaping for the LSTM layer requirement
     Xn = Xn.reshape(Xn.shape[0],1,Xn.shape[1])
 
     # adding the data to look back at
@@ -295,17 +295,24 @@ if __name__ == '__main__':
 
     parser.add_argument("-i","--inputfile", help="name of the input file, default = input.csv",type=str)
     parser.add_argument("-t1","--train1", help="train first network, default = False",action="store_true")
-    parser.add_argument("-t2","--train2", help="train second network, default = False",action="store_true")
     parser.add_argument("-e1","--epochs1", help="epochs to train the first network, default = 100", type=int)
-    parser.add_argument("-e2","--epochs2", help="epochs to train the second network, default = 1000", type=int)
     parser.add_argument("-rs","--rescale", help="recalculate the scaling of the output of first network, default = False",action="store_true")
+    parser.add_argument("-t2","--train2", help="train second network, default = False",action="store_true")
+    parser.add_argument("-e2","--epochs2", help="epochs to train the second network, default = 1000", type=int)
+ 
+    parser.add_argument("-f","--full", help="set all training paramters to true, default = False",action="store_true")
  
     args = parser.parse_args()
 
     filename = args.inputfile if args.inputfile else 'input.csv'
 
     epoch1 = args.epochs1 if args.epochs1 else  100
-    epoch2 = args.epochs2 if args.epochs2 else  1000
+    epoch2 = args.epochs2 if args.epochs2 else  10000
     
+    if args.full :
+        args.train1 = True
+        args.train2 = True
+        args.rescale = True
+        
 
     execute_script(filename,train1 = args.train1, e=epoch1, train2=args.train2, e2=epoch2, rescale=args.rescale)
