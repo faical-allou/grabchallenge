@@ -24,7 +24,7 @@ start_time = time.time()
 ###################################################   HELPER FUNCTIONS
 
 def prep_input(data, precision_geo):
-    geodata = pd.read_csv('geodata.geo')
+    geodata = pd.read_csv('geodata.dat')
     
     data['geo_lim'] = data.geohash6.str[0:precision_geo]
     geodata_lim = geodata.geo_id.str[0:precision_geo]
@@ -63,7 +63,8 @@ def scaling(Y,scaling_vector):
     return np.array(out)
 
 def sum_pred_error(y_true, y_pred):
-    return 10*K.abs(K.mean(y_pred)-K.mean(y_true))+K.mean(K.abs(y_pred-y_true))
+    return K.abs(K.mean(y_pred)-K.mean(y_true))+K.mean(K.abs(y_pred-y_true)**2)
+
 
 ###################################################   PRINTING FUNCTIONS
 
@@ -122,23 +123,23 @@ def print_weights(model):
     print("std weights = "+str(np.std(list_weights))+"\n")
 
 ###################################################   INPUT
-data = pd.read_csv('training.csv')
+data = pd.read_csv('input.csv')
 print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-training_periods = 96*50       # 96 is the number of intervals per day
+training_periods = 96*10       # 96 is the number of intervals per day
 test_periods = 5 # following the test period
 precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
 lookback = 4*4 # number of periods to lookback; 4 per hour 
 
-train = True   # otherwise use the latest
+train = False   # otherwise use the latest
 start_from_previous = True  # if you train do you start from the previous
 
 train2 = True   # for the second neural net
 start_from_previous2 = True # if you train2 do you start from the previous
 
 rescale = True  # recalculate the scaling factors
-p = 4           # number of periods to average for the scaling starting from the last training period
-scaling_vector = np.genfromtxt('scaling.v', delimiter=',')
+p = 8           # number of periods to average for the scaling starting from the last training period
+scaling_vector = np.genfromtxt('scaling.dat', delimiter=',')
 
 ##################################################  PREP INPUT
 Xprep, Xfull = prep_input(data, precision)
@@ -149,7 +150,7 @@ h_layer1_nodes = int(nbcolumns*lookback)
 h_layeri_nodes = int(nbcolumns*lookback)
 h_layerf_nodes = int(nbcolumns*lookback)
 
-e = 10000                       # epoch
+e = 100                       # epoch
 e2 = 10000
 b = int(training_periods/2)     # batch size
 
@@ -221,7 +222,7 @@ Yscalen = model.predict(Xn)
 if rescale:
     scaling_vector = np.sum(Yn[-p:], axis=0)/np.sum(Yscalen[-p:], axis=0)
 
-    myFile = open('scaling.v', 'w', newline='')
+    myFile = open('scaling.dat', 'w', newline='')
     with myFile:
         writer = csv.writer(myFile)
         writer.writerow(scaling_vector)
@@ -229,7 +230,7 @@ if rescale:
 print("scaling done: "+str(int(time.time()-start_time))+" s")
 ###################################################   DATA PREP FOR NETWORK 2
 
-full_size = len(data.geohash6.unique())
+full_size = len(Xfull.columns)
 
 Y2 = np.array(Xfull[lookback+1:training_periods+1])
 
