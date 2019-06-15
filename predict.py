@@ -11,17 +11,23 @@ import tensorflow as tf
 import csv
 import time
 from datetime import datetime
-import re
-import matplotlib.pyplot as plt
+
+import argparse
 
 import train 
 
-Xprepn, mXprepn, sXprepn, Xfull, full_size, nbcolumns, test_periods,lookback, model, model2, scaling_vector = train.execute_script('input.csv')
 
-#remove warnings tensorflow
-tf.logging.set_verbosity(tf.logging.ERROR)
+parser = argparse.ArgumentParser()
+parser.add_argument("-i","--inputfile", help="name of the input file",type=str)
+parser.add_argument("-o","--outputfile", help="name of the input file",type=str)
 
-##################################################   DATA PREP FOR NETWORK 1
+args = parser.parse_args()
+infilename = args.inputfile if args.inputfile else 'input.csv'
+outfilename = args.inputfile if args.inputfile else 'prediction.csv'
+Xprepn, mXprepn, sXprepn, Xfull, full_size, nbcolumns, test_periods,lookback, model, model2, scaling_vector = train.execute_script(infilename)
+
+
+##################################################   DATA PREP FOR MODEL
 
 Ypredict = np.zeros((1,full_size))
 Xtest_full = np.array(Xprepn)
@@ -62,6 +68,6 @@ del Ypd['datetime']
 
 Ypd = Ypd[['geohash6', 'day', 'timestamp', 'demand']]
 
-Ypd.to_csv('prediction.csv',sep=',', encoding='utf-8', index=False)
+Ypd.to_csv(outfilename,sep=',', encoding='utf-8', index=False)
 
 

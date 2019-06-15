@@ -14,6 +14,8 @@ from datetime import datetime
 import re
 import matplotlib.pyplot as plt
 
+import argparse
+
 plt.style.use('seaborn-whitegrid')
 
 #remove warnings tensorflow
@@ -34,6 +36,7 @@ def prep_input(data, precision_geo):
     
     datagg = data.groupby(['geo_lim','date_time_index'])['demand'].mean().reset_index(name='mean')
     Xagg = datagg.pivot(index='date_time_index', columns='geo_lim', values='mean').fillna(0, inplace=False)
+    
     for c_lim in geodata_lim:
         if c_lim not in Xagg : Xagg[c_lim] = 0
     
@@ -122,12 +125,11 @@ def print_weights(model):
     print("mean weights = "+str(np.mean(list_weights)))
     print("std weights = "+str(np.std(list_weights))+"\n")
 
-def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescale=False):
+def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, rescale=False):
 ###################################################   INPUT
     data = pd.read_csv(filename)
     print("reading data done : "+str(int(time.time()-start_time))+" s")
 
-    training_periods = 96*10       # 96 is the number of intervals per day
     test_periods = 5 # following the test period
     precision = 5 # number of digit in the geo param (max is 6)  this parameter increases size O(36^n)
     lookback = 4*4 # number of periods to lookback; 4 per hour 
@@ -141,6 +143,7 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
 
     ##################################################  PREP INPUT
     Xprep, Xfull = prep_input(data, precision)
+    training_periods = len(Xprep.index)-test_periods-2
 
     ##################################################  HYPERPARAMETERS
     nbcolumns = len(Xprep.columns)
@@ -149,11 +152,6 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
     h_layerf_nodes = int(nbcolumns*lookback)
 
     b = int(training_periods/2)     # batch size
-
-    print("size of each input vector : "+ str(nbcolumns))
-    print("size of 1st hidden layers : "+ str(h_layer1_nodes))
-    print("size of i hidden layers : "+ str(h_layeri_nodes))
-    print("size of f hidden layers : "+ str(h_layerf_nodes)+"\n")
 
     ###################################################   DATA PREP FOR NETWORK 1
 
@@ -201,14 +199,15 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
     if start_from_previous: model.load_weights("model.h5x")
     print("training start: " +str(int(time.time()-start_time))+" s")
 
-    if train:
+    if train1:
         model.compile(loss='mean_absolute_error', optimizer='sgd', metrics=['mean_absolute_error'])
         model.fit(Xn, Yn, epochs=e, batch_size=b, validation_split=0.2,  verbose=2)
 
         scores = model.evaluate(Xn, Yn)
         model.save_weights("model.h5x")
-        print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]))
+        print(" ")
         print("training1 in : "+str(int(time.time()-start_time))+" s")
+        print(" ")
 
     else:
         model.load_weights("model.h5x")
@@ -252,9 +251,10 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
         model2.save_weights("model2.h5x")
 
         scores = model2.evaluate(fitted_m1, Y2)
-        print(str(model2.metrics_names[1])+" :"+str( scores[1]))
+        print(" ")
         print("training2 in : "+str(int(time.time()-start_time))+" s")
         print(" ")
+
     else: 
         model2.load_weights("model2.h5x")
 
@@ -269,7 +269,7 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
     ###################################################   RESULTS
 
     ####output of first model
-    if train : 
+    if train1 : 
         print_weights(model)
 
         mae, mape, mse = KPI(Ytest, Yhat, 1)
@@ -292,4 +292,21 @@ def execute_script(filename, train = False, e=100, e2=1000, train2=False, rescal
     return Xprepn, mXprepn, sXprepn, Xfull, full_size, nbcolumns, test_periods, lookback, model, model2, scaling_vector
 
 if __name__ == '__main__':
-    execute_script('input.csv',train = True, e=100, train2=True, e2=1000, rescale=True)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-i","--inputfile", help="name of the input file",type=str)
+    parser.add_argument("-t1","--train1", help="train first network",action="store_true")
+    parser.add_argument("-t2","--train2", help="train second network",action="store_true")
+    parser.add_argument("-e1","--epochs1", help="epochs to train the first network", type=int)
+    parser.add_argument("-e2","--epochs2", help="epochs to train the second network", type=int)
+    parser.add_argument("-rs","--rescale", help="recalculate the scaling of the output of first network",action="store_true")
+ 
+    args = parser.parse_args()
+
+    filename = args.inputfile if args.inputfile else 'input.csv'
+
+    epoch1 = args.epochs1 if args.epochs1 else  100
+    epoch2 = args.epochs2 if args.epochs2 else  1000
+    
+
+    execute_script(filename,train1 = args.train1, e=epoch1, train2=args.train2, e2=epoch2, rescale=args.rescale)
