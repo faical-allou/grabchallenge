@@ -1,6 +1,7 @@
 # grabchallenge
 
-This is a submission for the challenge "Traffic Management" published by grab in May 2019
+This is a submission for the challenge "Traffic Management" published by grab in May 2019.
+
 The website is here : https://www.aiforsea.com/traffic-management
 
 The task consist in predicting the demand for rides for 5 time steps (of 15 min) given data for the preceding 2 weeks.
@@ -16,12 +17,15 @@ Both come with options that can be passed from the command line, and -h will lis
 This submision should be judged on the basis of the following step by step, assuming the input file is called **input.csv**:
 
 1) install the dependencies: 
+
 `pip install -r requirements.txt`
 
-2) retrain the networks (note the option -f that means to retrain the entire set with default values):
+2) retrain the networks for the duration given (note the option -f that means to retrain the entire set with default values):
+
 `python train.py -f`
 
-3) predict the next 5 timesteps
+3) predict the next 5 timesteps:
+
 `python predict.py `
 
 This will generate a file called "prediction.csv"
