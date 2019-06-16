@@ -35,6 +35,11 @@ The solution submitted here consists of several steps:
 * denormalize and scale the data to avoid topline demand loss (most recent training period vs actual)
 * predict the time step at the granular level (geohash6) by using the forecast of the step before with a "vanilla" neural network (1 hidden layers)
 
+-> the key advantages of the solution are:
+* aggregating data at a higher level makes the training data (input and output) less scarce. Thus, we can reach a high accuracy of forecasting without overfitting
+* predictions at a higher level are a useful output since they indicate an area of operation for drivers and even if the granular demand doesn't materialize, the demand will happen in a reasonable distance from the forecast
+* topline demand is very accurate and can support staffing in call center for example
+
 ------
 
 There are several options available from the command line:
