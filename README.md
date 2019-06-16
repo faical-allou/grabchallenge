@@ -67,7 +67,7 @@ for **predict.py**
 ----
 # Note:
 
-If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the second network which is where most of the training benefits are.
+If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the second network which is where most of the training benefits are. If this is still too long you can limit the number of epochs to 1000 with `python train.py -t2 -e2 1000`
 
 Training the networks will generate statistics and graphs for a test period made of the last 5 timesteps in the input file.
 

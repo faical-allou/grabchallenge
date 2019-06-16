@@ -65,7 +65,7 @@ def scaling(Y,scaling_vector):
     out = Y*scaling_vector  
     return np.array(out)
 
-def sum_pred_error(y_true, y_pred):
+def sum_pred_error(y_true, y_pred): #this forces the second network to conserve the total demand
     return K.abs(K.mean(y_pred)-K.mean(y_true))+K.mean(K.abs(y_pred-y_true)**2)
 
 
