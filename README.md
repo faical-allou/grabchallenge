@@ -9,11 +9,11 @@ The task consist in predicting the demand for rides for 5 time steps (of 15 min)
 
 The input data comes in a csv file, with the following columns: "geohash6","day","timestamp","demand", the file should be comma (",") separated
 
-The script to run are "train.py -f" and "predict.py"
+The scripts to run are "train.py -f" and "predict.py"
 
 Both come with options that can be passed from the command line, and -h will list them.
 
-This submision should be judged on the basis of the following step by step, assuming the input file is called *input.csv*:
+This submision should be judged on the basis of the following step by step, assuming the input file is called **input.csv**:
 
 1) install the dependencies: 
 `pip install -r requirements.txt`
@@ -45,7 +45,7 @@ for **train.py**
 -e1 <value> will train the recurrent network for the given number of epochs (default is 100)
 
 -t2 will only train the second network
--e2 <value> will train the scond network for the given number of epochs(default is 3000)
+-e2 <value> will train the second network for the given number of epochs (default is 3000)
 
 -rs with recalculate the scaling factor
 
@@ -60,14 +60,4 @@ for **predict.py**
 -i to name the input file unless it is called "input.csv"
 -o to name the output file unless it is called "prediction.csv"
 ```
-
-
-
-
-
-
-
-
-
-
 
