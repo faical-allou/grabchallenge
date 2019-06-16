@@ -16,7 +16,7 @@ This submision should be judged on the basis of the following step by step, assu
 
 `pip install -r requirements.txt`
 
-2) retrain the networks for the duration given (note the option -f that means to retrain the entire set with default values):
+2) retrain the pretrained networks with the new data (note the option -f that means to retrain with default values):
 
 `python train.py -f`
 
@@ -68,6 +68,8 @@ for **predict.py**
 # Note:
 
 If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the second network which is where most of the training benefits are.
+
+Training the networks will generate statistics and graphs for a test period made of the last 5 timesteps in the input file.
 
 The file **geodata.dat** contains a list of the geohash6 ids found in the initial training data. This enables to use data that contains less geohash6 id, but not more. The code will fail if an additional geohash6 data is introduced. In this case, the network will need to be reset by changing the variable *start_from_previous* and *start_from_previous2* to *False* in the **train.py** file.
 
