@@ -5,7 +5,7 @@ The website is here : https://www.aiforsea.com/traffic-management
 
 The task consist in predicting the demand for rides for 5 time steps (of 15 min) given data for the preceding 2 weeks.
 
-##########
+-------
 
 The input data comes in a csv file, with the following columns: "geohash6","day","timestamp","demand", the file should be comma (",") separated
 
@@ -26,7 +26,7 @@ This submision should be judged on the basis of the following step by step, assu
 
 This will generate a file called "prediction.csv"
 
-############
+------
 
 The solution offered consist in several steps:
 
@@ -35,9 +35,10 @@ b) predict the next time steps at the aggregate normalized level with a recurren
 c) denormalize and scale the data to avoid topline demand loss (most recent training period vs actual)
 d) predict the time step at the granular level (geohash6) by using the forecast of the step before with a "vanilla" neural network (1 hidden layers)
 
-###########
+------
 
 There are several options available from the command line:
+
 for **train.py**
 ```
 -t1 will only train the recurrent network
@@ -53,8 +54,9 @@ for **train.py**
 -i to name the input file unless it is called "input.csv"
 ```
 -----
-```
 for **predict.py**
+
+```
 -i to name the input file unless it is called "input.csv"
 -o to name the output file unless it is called "prediction.csv"
 ```
