@@ -28,12 +28,12 @@ This will generate a file called "prediction.csv"
 
 ------
 
-The solution offered consist in several steps:
+The solution submitted here consists of several steps:
 
-* a) aggregate the data one level higher (geohash5) and normalize it
-* b) predict the next time steps at the aggregate normalized level with a recurrent neural network (2 hidden LSTM layers)
-* c) denormalize and scale the data to avoid topline demand loss (most recent training period vs actual)
-* d) predict the time step at the granular level (geohash6) by using the forecast of the step before with a "vanilla" neural network (1 hidden layers)
+* aggregate the data one level higher (geohash5) and normalize it
+* predict the next time steps at the aggregate normalized level with a recurrent neural network (2 hidden LSTM layers)
+* denormalize and scale the data to avoid topline demand loss (most recent training period vs actual)
+* predict the time step at the granular level (geohash6) by using the forecast of the step before with a "vanilla" neural network (1 hidden layers)
 
 ------
 
