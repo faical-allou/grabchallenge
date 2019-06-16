@@ -236,6 +236,7 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
 
     model2 = Sequential()
     model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
+    model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
 
     if start_from_previous2: model2.load_weights("model2.h5x")
 
@@ -244,7 +245,7 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
         fitted_m1s = scaling(Yscalen, scaling_vector)
         fitted_m1 = denormalize(fitted_m1s, mXprepn, sXprepn)
 
-        model2.compile(loss=sum_pred_error, optimizer='adam', metrics=['mean_absolute_error',sum_pred_error])
+        model2.compile(loss=sum_pred_error, optimizer='adam', metrics=['mean_absolute_error'])
 
         model2.fit(fitted_m1, Y2, epochs=e2, batch_size=b, validation_split=0.2,  verbose=2)
         model2.save_weights("model2.h5x")
@@ -307,7 +308,7 @@ if __name__ == '__main__':
     filename = args.inputfile if args.inputfile else 'input.csv'
 
     epoch1 = args.epochs1 if args.epochs1 else  100
-    epoch2 = args.epochs2 if args.epochs2 else  10000
+    epoch2 = args.epochs2 if args.epochs2 else  3000
     
     if args.full :
         args.train1 = True
