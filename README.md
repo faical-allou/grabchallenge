@@ -10,10 +10,6 @@ The task consist in predicting the demand for rides for 5 time steps (of 15 min)
 
 The input data comes in a csv file, with the following columns: "geohash6","day","timestamp","demand", the file should be comma (",") separated
 
-The scripts to run are "train.py -f" and "predict.py"
-
-Both come with options that can be passed from the command line, and -h will list them.
-
 This submision should be judged on the basis of the following step by step, assuming the input file is called **input.csv**:
 
 1) install the dependencies: 
@@ -43,6 +39,11 @@ The solution submitted here consists of several steps:
 
 There are several options available from the command line:
 
+``` 
+-h for help 
+-i to name the input file unless it is called "input.csv"
+```
+
 for **train.py**
 ```
 -t1 will only train the recurrent network
@@ -55,19 +56,15 @@ for **train.py**
 
 -f will retrain all based on the default values
 
--i to name the input file unless it is called "input.csv"
 ```
 -----
 for **predict.py**
 
 ```
--i to name the input file unless it is called "input.csv"
--o to name the output file unless it is called "prediction.csv"
+-o to name the output file otherwise it is called "prediction.csv"
 ```
 
 ----
-# NOte:
+# Note:
 
-Training the first network is slow and the pretrained weights perform OK in most cases. 
-
-If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the sceond network.
+If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the second network.
