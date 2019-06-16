@@ -236,7 +236,7 @@ def execute_script(filename, train1 = False, e=100, e2=1000, train2=False, resca
 
     model2 = Sequential()
     model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
-    model2.add(Dense(full_size, activation='sigmoid', input_dim=nbcolumns,bias_regularizer=regularizers.l1(0.1)))
+    model2.add(Dense(full_size, activation='sigmoid', bias_regularizer=regularizers.l1(0.1)))
 
     if start_from_previous2: model2.load_weights("model2.h5x")
 
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     parser.add_argument("-e1","--epochs1", help="epochs to train the first network, default = 100", type=int)
     parser.add_argument("-rs","--rescale", help="recalculate the scaling of the output of first network, default = False",action="store_true")
     parser.add_argument("-t2","--train2", help="train second network, default = False",action="store_true")
-    parser.add_argument("-e2","--epochs2", help="epochs to train the second network, default = 1000", type=int)
+    parser.add_argument("-e2","--epochs2", help="epochs to train the second network, default = 3000", type=int)
  
     parser.add_argument("-f","--full", help="set all training paramters to true, default = False",action="store_true")
  
