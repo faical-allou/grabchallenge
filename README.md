@@ -65,3 +65,9 @@ for **predict.py**
 -o to name the output file unless it is called "prediction.csv"
 ```
 
+----
+# NOte:
+
+Training the first network is slow and the pretrained weights perform OK in most cases. 
+
+If `python train.py -f` takes too long you can consider running `python train.py -t2` and only train the sceond network.
