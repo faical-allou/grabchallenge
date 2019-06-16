@@ -13,16 +13,16 @@ The script to run are "train.py -f" and "predict.py"
 
 Both come with options that can be passed from the command line, and -h will list them.
 
-This submision should be judged on the basis of the following step by step:
+This submision should be judged on the basis of the following step by step, assuming the input file is called *input.csv*:
 
 1) install the dependencies:
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 2) retrain the networks (note the option -f that means to retrain the entire set with default values)
-python train.py -f
+`python train.py -f`
 
 3) predict the next 5 timesteps
-python predict.py 
+`python predict.py `
 
 This will generate a file called "prediction.csv"
 
@@ -38,12 +38,33 @@ d) predict the time step at the granular level (geohash6) by using the forecast 
 ###########
 
 There are several options available from the command line:
-for train.py
+for **train.py**
 -t1 will only train the recurrent network
 -e1 <value> will train the recurrent network for the given number of epochs (default is 100)
 
 -t2 will only train the second network
 -e2 <value> will train the scond network for the given number of epochs(default is 3000)
+
+-rs with recalculate the scaling factor
+
+-f will retrain all based on the default values
+
+-i to name the input file unless it is called "input.csv"
+
+########
+
+for **predict.py**
+-i to name the input file unless it is called "input.csv"
+-o to name the output file unless it is called "prediction.csv"
+
+
+
+
+
+
+
+
+
 
 
 
