@@ -10,7 +10,7 @@ The task consist in predicting the demand for rides for 5 time steps (of 15 min)
 
 The input data comes in a csv file, with the following columns: "geohash6","day","timestamp","demand", the file should be comma (",") separated
 
-This submision should be judged run on *python 3.5* on the basis of the following step by step, assuming the input file is called **input.csv**:
+This submision should be run on *python 3.5* and judged on the basis of the following step by step, assuming the input file is called **input.csv**:
 
 1) install the dependencies: 
 
