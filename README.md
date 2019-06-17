@@ -77,6 +77,8 @@ If `python train.py -f` takes too long you can consider running `python train.py
 
 Training the networks will generate statistics and graphs for a test period made of the last 5 timesteps in the input file
 
+Training of the networks generates the files **output.csv** and **output2.csv** respectively for the recurrent network and "vanilla" network. The files contain set of 2 rows, one for the prediction on each of the last 5 timesteps followed by the actual value for the time step. The columns are each of the geohash.
+
 The file **geodata.dat** contains a list of the geohash6 ids found in the initial training data. This enables to use data that contains less geohash6 id, but not more. The code will fail if an additional geohash6 data is introduced. In this case, the network will need to be reset by changing the variable *start_from_previous* and *start_from_previous2* to *False* in the **train.py** file. This will delete all the pretrained weights and will require significantly more epochs to converge
 
 The file **scaling_vector.dat** contains the correction factor that is applied after the output of the first network and before entering the second one
@@ -84,6 +86,7 @@ The file **scaling_vector.dat** contains the correction factor that is applied a
 The files **model.h5x** and **model2.h5x** are "Keras exports" of the weights to be used as pretraining for both networks
 
 After training, each network will replace the **.h5x** files. In addition the first network will generate a **model.h5** file to be saved in the *models* folder
+
 
 
 
